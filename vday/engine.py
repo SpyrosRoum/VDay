@@ -14,7 +14,7 @@ class Game:
         self.screen = pygame.display.set_mode((self.width, self.height))
         pygame.display.set_caption("VDay")
 
-        self.player = Entity(player=True)
+        self.player = Entity("Player", type_="player", path="assets/sprites/player.png")
 
         self.main_loop()
 
@@ -38,15 +38,17 @@ class Game:
             pressed_keys = pygame.key.get_pressed()
             answer = handle_keys(pressed_keys)
             if direction := answer.get("move"):
-                print(*direction)
                 self.player.move(*direction)
 
-            self.screen.fill((0, 0, 0))
-            self.screen.blit(self.player.surf, self.player.rect)
+            self.screen.fill((255, 255, 255))
+            all_ = Entity.get("all")
+            all_.draw(self.screen)
+            # self.screen.blit(self.player.surf, self.player.rect)
 
             pygame.display.flip()
 
         self.clean_up()
+
 
     def clean_up(self):
         pygame.quit()

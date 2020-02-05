@@ -1,19 +1,36 @@
 import pygame
 from pygame import sprite
 
+
 class Entity(sprite.Sprite):
-    def __init__(self, player=False):
+    entities = sprite.Group()
+    enemies = sprite.Group()
+    items = sprite.Group()
+    friends = sprite.Group()
+
+    def __init__(self, name, type_, path=None, ai=None, fighter=None):
         super(Entity, self).__init__()
 
-        self.player = player
-        self.surf = pygame.Surface((50, 25))
-        self.surf.fill((255, 255, 255))
-        self.rect = self.surf.get_rect()
+        self.name = name
+        self.type_ = type_
+
+        if path is not None:
+            self.image = pygame.image.load(path).convert_alpha()
+            self.rect = self.image.get_rect()
+        else:
+            self.image = None
+
+            self.surf = pygame.Surface((50, 25))
+            self.surf.fill((255, 255, 255))
+            self.rect = self.surf.get_rect()
+
+        self.__class__.add_to_groups(self)
 
     def move(self, dx, dy):
+        # FIXME Speed when moving is too fast
         self.rect.move_ip(dx, dy)
 
-        if self.player:
+        if self.type_ == "player":
             # Keep him visible
             # width, height = pygame.display.get_window_size() # New in pygame v2
             info = pygame.display.Info()
@@ -28,3 +45,23 @@ class Entity(sprite.Sprite):
                 self.rect.top = 0
             if self.rect.bottom >= height:
                 self.rect.bottom = height
+
+    @classmethod
+    def add_to_groups(cls, entity):
+        cls.entities.add(entity)
+
+        if entity.type_ == "enemy":
+            cls.enemies.add(entity)
+        if entity.type_ == "item":
+            cls.items.add(entity)
+        if entity.type_ == "friend":
+            cls.friends.add(entity)
+
+    @classmethod
+    def get(cls, type_):
+        return {
+            "all": cls.entities,
+            "enemies": cls.enemies,
+            "items": cls.items,
+            "friends": cls.friends,
+        }[type_]
