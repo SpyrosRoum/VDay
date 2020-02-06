@@ -15,11 +15,10 @@ class Entity(sprite.Sprite):
         self.type_ = type_
 
         if path is not None:
-            self.image = pygame.image.load(path).convert_alpha()
-            self.rect = self.image.get_rect()
+            self.surf = pygame.image.load(path).convert_alpha()
+            # self.surf.set_colorkey((0, 0, 0), pygame.RLEACCEL)
+            self.rect = self.surf.get_rect()
         else:
-            self.image = None
-
             self.surf = pygame.Surface((50, 25))
             self.surf.fill((255, 255, 255))
             self.rect = self.surf.get_rect()
@@ -27,7 +26,6 @@ class Entity(sprite.Sprite):
         self.__class__.add_to_groups(self)
 
     def move(self, dx, dy):
-        # FIXME Speed when moving is too fast
         self.rect.move_ip(dx, dy)
 
         if self.type_ == "player":
@@ -45,6 +43,10 @@ class Entity(sprite.Sprite):
                 self.rect.top = 0
             if self.rect.bottom >= height:
                 self.rect.bottom = height
+
+    def update(self):
+        if self.ai is not None:
+            self.ai.update()
 
     @classmethod
     def add_to_groups(cls, entity):
