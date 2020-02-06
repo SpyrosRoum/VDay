@@ -8,7 +8,9 @@ class Game:
 
     def __init__(self):
         pygame.init()
+        self.clock = pygame.time.Clock()
 
+        self.fps = 30
         self.width = 800
         self.height = 500
         self.screen = pygame.display.set_mode((self.width, self.height))
@@ -41,16 +43,20 @@ class Game:
                 self.player.move(*direction)
 
             self.screen.fill((255, 255, 255))
+
+            # Print all entites
+            # TODO print only visible entities?
             all_ = Entity.get("all")
             all_.draw(self.screen)
-            # self.screen.blit(self.player.surf, self.player.rect)
 
             pygame.display.flip()
+            self.clock.tick(self.fps)
 
         self.clean_up()
 
 
     def clean_up(self):
+        # TODO maybe save current state of the game
         pygame.quit()
 
 
