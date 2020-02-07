@@ -8,20 +8,19 @@ class Entity(sprite.Sprite):
     items = sprite.Group()
     friends = sprite.Group()
 
-    def __init__(self, name, type_, path=None, ai=None, fighter=None):
+    def __init__(self, name, type_, path, x, y, ai=None, fighter=None):
         super(Entity, self).__init__()
 
         self.name = name
         self.type_ = type_
+        # Map x, y. Not pixels
+        self.x = x
+        self.y = y
 
-        if path is not None:
-            self.surf = pygame.image.load(path).convert_alpha()
-            # self.surf.set_colorkey((0, 0, 0), pygame.RLEACCEL)
-            self.rect = self.surf.get_rect()
-        else:
-            self.surf = pygame.Surface((50, 25))
-            self.surf.fill((255, 255, 255))
-            self.rect = self.surf.get_rect()
+        self.image = pygame.image.load(path).convert_alpha()
+        # self.image.set_colorkey((0, 0, 0), pygame.RLEACCEL)
+        self.rect = self.image.get_rect()
+
 
         self.__class__.add_to_groups(self)
 
@@ -47,6 +46,9 @@ class Entity(sprite.Sprite):
     def update(self):
         if self.ai is not None:
             self.ai.update()
+
+    def draw(self, screen, x, y):
+        screen.blit(self.image, (x, y))
 
     @classmethod
     def add_to_groups(cls, entity):

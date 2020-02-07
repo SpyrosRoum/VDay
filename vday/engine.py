@@ -2,6 +2,7 @@ import pygame
 
 from entity import Entity
 from input_handlers import handle_events, handle_keys
+from map_objects import GameMap, draw_map
 
 
 class Game:
@@ -16,7 +17,10 @@ class Game:
         self.screen = pygame.display.set_mode((self.width, self.height))
         pygame.display.set_caption("VDay")
 
-        self.player = Entity("Player", type_="player", path="assets/sprites/player.png")
+
+        self.map = GameMap(30, 30, 32, 32)
+
+        self.player = Entity("Player", type_="player", path="assets/sprites/player.png", x=0 * self.map.cell_width, y=0 * self.map.cell_height)
 
         self.main_loop()
 
@@ -43,6 +47,7 @@ class Game:
                 self.player.move(*direction)
 
             self.screen.fill((255, 255, 255))
+            draw_map(self.screen, self.map)
 
             # Print all entites
             # TODO print only visible entities?
