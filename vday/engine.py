@@ -19,6 +19,7 @@ class Game:
 
 
         self.map = GameMap(30, 30, 32, 32)
+        self.fov_map = self.map.init_fov()
 
         self.player = Entity("Player", type_="player", path="assets/sprites/player.png", x=0 * self.map.cell_width, y=0 * self.map.cell_height)
 
@@ -26,6 +27,7 @@ class Game:
 
     def main_loop(self):
         running = True
+        calc_fov = True
 
         while running:
             # Look through all the events in the q
@@ -44,18 +46,24 @@ class Game:
             pressed_keys = pygame.key.get_pressed()
             answer = handle_keys(pressed_keys)
             if direction := answer.get("move"):
-                self.player.move(*direction)
+                calc_fov = True
+                self.player.move(self.map, *direction)
 
             self.screen.fill((255, 255, 255))
+            if calc_fov:
+                self.map.calc_fov(self.player.x, self.player.y)
             draw_map(self.screen, self.map)
 
             # Print all entites
             # TODO print only visible entities?
             all_ = Entity.get("all")
-            all_.draw(self.screen)
+            for entity in all_:
+                entity.draw(self.screen)
 
             pygame.display.flip()
             self.clock.tick(self.fps)
+            calc_fov = False
+
 
         self.clean_up()
 

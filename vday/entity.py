@@ -1,6 +1,7 @@
 import pygame
 from pygame import sprite
 
+from map_objects import GameMap
 
 class Entity(sprite.Sprite):
     entities = sprite.Group()
@@ -24,31 +25,20 @@ class Entity(sprite.Sprite):
 
         self.__class__.add_to_groups(self)
 
-    def move(self, dx, dy):
-        self.rect.move_ip(dx, dy)
+    def move(self, map_, dx, dy):
+        if map_.tiles[self.x + dx][self.y + dy].blocked:
+            return
 
-        if self.type_ == "player":
-            # Keep him visible
-            # width, height = pygame.display.get_window_size() # New in pygame v2
-            info = pygame.display.Info()
-            width = info.current_w
-            height = info.current_h
+        self.x += dx
+        self.y += dy
 
-            if self.rect.left < 0:
-                self.rect.left = 0
-            if self.rect.right > width:
-                self.rect.right = width
-            if self.rect.top <= 0:
-                self.rect.top = 0
-            if self.rect.bottom >= height:
-                self.rect.bottom = height
 
     def update(self):
         if self.ai is not None:
             self.ai.update()
 
-    def draw(self, screen, x, y):
-        screen.blit(self.image, (x, y))
+    def draw(self, screen):
+        screen.blit(self.image, (self.x * GameMap.cell_width, self.y * GameMap.cell_height))
 
     @classmethod
     def add_to_groups(cls, entity):

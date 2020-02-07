@@ -20,12 +20,12 @@ def handle_events(event):
 
 def handle_keys(pressed_keys):
     if pressed_keys[pygame.K_RIGHT]:
-        return {'move': (5, 0)}
+        return {'move': (1, 0)}
     if pressed_keys[pygame.K_LEFT]:
-        return {'move': (-5, 0)}
+        return {'move': (-1, 0)}
     if pressed_keys[pygame.K_UP]:
-        return {'move': (0, -5)}
+        return {'move': (0, -1)}
     if pressed_keys[pygame.K_DOWN]:
-        return {'move': (0, 5)}
+        return {'move': (0, 1)}
 
     return dict()
