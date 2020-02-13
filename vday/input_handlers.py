@@ -1,31 +1,33 @@
-import pygame
+import tcod
 
+def handle_keys(key):
+    key_char = chr(key.c)
 
-def handle_events(event):
-    answer = dict()
-    if event.type == pygame.KEYDOWN:
-        key = event.key
+    #* Movement keys
+    if key.vk == tcod.KEY_UP or key_char == 'k':
+        return {'move': (0, -1)}
+    if key.vk == tcod.KEY_DOWN or key_char == 'j':
+        return {'move': (0, 1)}
+    if key.vk == tcod.KEY_LEFT or key_char == 'h':
+        return {'move': (-1, 0)}
+    if key.vk == tcod.KEY_RIGHT or key_char == 'l':
+        return {'move': (1, 0)}
+    if key_char == 'y':
+        return {'move': (-1, -1)}
+    if key_char == 'u':
+        return {'move': (1, -1)}
+    if key_char == 'b':
+        return {'move': (-1, 1)}
+    if key_char == 'n':
+        return {'move': (1, 1)}
 
-        if key == pygame.K_ESCAPE:
-            # TODO Bring up a menu
-            return {'exit': True}
-        if key == pygame.K_RETURN:
-            if event.mod & pygame.KMOD_ALT:
-                return {'fullscreen': True}
-    elif event.type == pygame.QUIT:
+    #* Toggle full screen
+    if key.vk == tcod.KEY_ENTER and key.lalt:
+        return {'fullscreen': True}
+
+    #* Exit
+    if key.vk == tcod.KEY_ESCAPE:
         return {'exit': True}
 
-    return answer
-
-
-def handle_keys(pressed_keys):
-    if pressed_keys[pygame.K_RIGHT]:
-        return {'move': (1, 0)}
-    if pressed_keys[pygame.K_LEFT]:
-        return {'move': (-1, 0)}
-    if pressed_keys[pygame.K_UP]:
-        return {'move': (0, -1)}
-    if pressed_keys[pygame.K_DOWN]:
-        return {'move': (0, 1)}
-
-    return dict()
+    #* No key was pressed
+    return {}

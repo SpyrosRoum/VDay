@@ -1,61 +1,53 @@
-import pygame
-from pygame import sprite
+import math
 
-from map_objects import GameMap
-
-class Entity(sprite.Sprite):
-    entities = sprite.Group()
-    enemies = sprite.Group()
-    items = sprite.Group()
-    friends = sprite.Group()
-
-    def __init__(self, name, type_, path, x, y, ai=None, fighter=None):
-        super(Entity, self).__init__()
-
-        self.name = name
-        self.type_ = type_
-        # Map x, y. Not pixels
+class Entity:
+    """
+    A generic object to represent players, enemies, items, etc
+    """
+    def __init__(self, x, y, char, color, name, blocks=False, fighter=None, ai=None):
         self.x = x
         self.y = y
+        self.char = char
+        self.color = color
+        self.name = name
+        self.blocks = blocks
 
-        self.image = pygame.image.load(path).convert_alpha()
-        # self.image.set_colorkey((0, 0, 0), pygame.RLEACCEL)
-        self.rect = self.image.get_rect()
+        self.fighter = fighter
+        self.ai = ai
 
+        if self.fighter:
+            self.fighter.owner = self
 
-        self.__class__.add_to_groups(self)
+        if self.ai:
+            self.ai.owner = self
 
-    def move(self, map_, dx, dy):
-        if map_.tiles[self.x + dx][self.y + dy].blocked:
-            return
-
+    def move(self, dx, dy):
+        # Move the entity by a giver amount
         self.x += dx
         self.y += dy
 
+    def move_towards(self, target_x, target_y, game_map, entities):
+        dx = target_x - self.x
+        dy = target_y - self.y
+        distance = math.sqrt(dx **2 + dy ** 2)
 
-    def update(self):
-        if self.ai is not None:
-            self.ai.update()
+        dx = round(dx / distance)
+        dy = round(dy / distance)
 
-    def draw(self, screen):
-        screen.blit(self.image, (self.x * GameMap.cell_width, self.y * GameMap.cell_height))
+        if not (game_map.is_blocked(self.x + dx, self.y + dy) or
+                get_blocking_entity_in(entities, self.x + dx, self.y + dy)):
+                self.move(dx, dy)
 
-    @classmethod
-    def add_to_groups(cls, entity):
-        cls.entities.add(entity)
+    def distance_to(self, other):
+        dx = other.x - self.x
+        dy = other.y - self.y
 
-        if entity.type_ == "enemy":
-            cls.enemies.add(entity)
-        if entity.type_ == "item":
-            cls.items.add(entity)
-        if entity.type_ == "friend":
-            cls.friends.add(entity)
+        return math.sqrt(dx ** 2 + dy ** 2)
 
-    @classmethod
-    def get(cls, type_):
-        return {
-            "all": cls.entities,
-            "enemies": cls.enemies,
-            "items": cls.items,
-            "friends": cls.friends,
-        }[type_]
+
+def get_blocking_entity_in(entities, x, y):
+    for entity in entities:
+        if entity.x == x and entity.y == y and entity.blocks:
+            return entity
+
+    return None
