@@ -131,3 +131,6 @@ pyproject.toml
 .vscode/settings.json
 
 *.kra
+assets/
+.idea/
+
