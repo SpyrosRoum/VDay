@@ -1,33 +1,37 @@
 import tcod
 
-def handle_keys(key):
-    key_char = chr(key.c)
+def handle_keys(event):
+    sym = event.sym
 
     #* Movement keys
-    if key.vk == tcod.KEY_UP or key_char == 'k':
+    if sym in [tcod.event.K_UP, tcod.event.K_w]:
         return {'move': (0, -1)}
-    if key.vk == tcod.KEY_DOWN or key_char == 'j':
-        return {'move': (0, 1)}
-    if key.vk == tcod.KEY_LEFT or key_char == 'h':
+    if sym in [tcod.event.K_LEFT, tcod.event.K_a]:
         return {'move': (-1, 0)}
-    if key.vk == tcod.KEY_RIGHT or key_char == 'l':
+    if sym in [tcod.event.K_DOWN, tcod.event.K_s]:
+        return {'move': (0, 1)}
+    if sym in [tcod.event.K_RIGHT, tcod.event.K_d]:
         return {'move': (1, 0)}
-    if key_char == 'y':
-        return {'move': (-1, -1)}
-    if key_char == 'u':
-        return {'move': (1, -1)}
-    if key_char == 'b':
-        return {'move': (-1, 1)}
-    if key_char == 'n':
-        return {'move': (1, 1)}
 
     #* Toggle full screen
-    if key.vk == tcod.KEY_ENTER and key.lalt:
+    if (event.mod & tcod.event.KMOD_LALT) and sym == tcod.event.K_RETURN:
         return {'fullscreen': True}
 
     #* Exit
-    if key.vk == tcod.KEY_ESCAPE:
+    if sym == tcod.event.K_ESCAPE:
         return {'exit': True}
 
     #* No key was pressed
+    return {}
+
+def handle_event(event):
+    if event.type == "KEYDOWN":
+        if event.repeat:
+            return {}
+
+        return handle_keys(event)
+
+    if event.type == "QUIT":
+        return {'exit': True}
+
     return {}
