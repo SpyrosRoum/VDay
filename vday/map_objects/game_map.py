@@ -1,5 +1,6 @@
-import tcod
 import random
+
+import tcod
 
 from components.ai import BasicMonster
 from components.fighter import Fighter
@@ -9,7 +10,7 @@ from map_objects.rectangle import Rect
 
 
 class GameMap:
-    def __init__(self, width, height):
+    def __init__(self, width: int, height: int):
         self.width = width
         self.height = height
         self.tiles = self.init_tiles()
