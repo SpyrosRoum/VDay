@@ -1,110 +1,118 @@
 import tcod
+import tcod.event
 
 from components.fighter import Fighter
 from entity import Entity, get_blocking_entity_in
-from input_handlers import handle_keys
+from input_handlers import handle_event
 from fov_functions import init_fov, recompute_fov
 from game_states import GameStates
 from map_objects.game_map import GameMap
 from render_functions import render_all, clear_all
 
-def main():
-    screen_width = 80
-    screen_height = 50
-    map_width = 80
-    map_height = 45
+colors = {
+    'dark_wall': tcod.Color(0, 0, 100),
+    'dark_ground': tcod.Color(50, 50, 150),
+    'light_wall': tcod.Color(130, 110, 50),
+    'light_ground': tcod.Color(200, 180, 50)
+}
 
-    room_max_size = 10
-    room_min_size = 6
-    max_rooms = 30
+class Game:
+    def __init__(self):
+        self.screen_width = 80
+        self.screen_height = 50
+        map_width = 80
+        map_height = 45
 
-    fov_algorithm = 0
-    fov_light_walls = True
-    fov_radius = 10
+        room_max_size = 10
+        room_min_size = 6
+        max_rooms = 30
 
-    max_monsters_in_room = 3
+        self.fov_algorithm = 0
+        self.fov_light_walls = True
+        self.fov_radius = 10
 
-    colors = {
-        'dark_wall': tcod.Color(0, 0, 100),
-        'dark_ground': tcod.Color(50, 50, 150),
-        'light_wall': tcod.Color(130, 110, 50),
-        'light_ground': tcod.Color(200, 180, 50)
-    }
+        max_monsters_in_room = 3
 
-    fighter_component = Fighter(hp=30, defense=2, power=5)
-    player = Entity(0, 0, "@", tcod.white, 'Player', blocks=True, fighter=fighter_component)
-    entities = [player]
+        fighter_component = Fighter(hp=30, defense=2, power=5)
+        self.player = Entity(0, 0, "@", tcod.white, 'V', blocks=True, fighter=fighter_component)
+        self.entities = [self.player]
 
-    tcod.console_set_custom_font('vday/arial10x10.png', tcod.FONT_TYPE_GREYSCALE | tcod.FONT_LAYOUT_TCOD)
-    root = tcod.console_init_root(
-        screen_width,
-        screen_height,
-        title='VDay',
-        fullscreen=False,
-        renderer=tcod.RENDERER_SDL2,
-        vsync=True,
-        order='F'
-    )
+        tcod.console_set_custom_font('arial10x10.png', tcod.FONT_TYPE_GREYSCALE | tcod.FONT_LAYOUT_TCOD)
+        self.root = tcod.console_init_root(
+            self.screen_width,
+            self.screen_height,
+            title='VDay',
+            fullscreen=False,
+            renderer=tcod.RENDERER_SDL2,
+            vsync=True,
+            order='F'
+        )
 
-    game_map = GameMap(map_width, map_height)
-    game_map.make_map(max_rooms, room_min_size, room_max_size, player, entities, max_monsters_in_room)
+        self.game_map = GameMap(map_width, map_height)
+        self.game_map.make_map(max_rooms, room_min_size, room_max_size, self.player, self.entities, max_monsters_in_room)
 
-    fov_recompute = True
+        self.fov_map = init_fov(self.game_map)
 
-    fov_map = init_fov(game_map)
+        self.main_loop()
 
-    key = tcod.Key()
-    mouse = tcod.Mouse()
+    def main_loop(self):
+        fov_recompute = True
+        game_state = GameStates.PLAYERS_TURN
 
-    game_state = GameStates.PLAYERS_TURN
+        while True:
+            for event in tcod.event.get():
+                action = handle_event(event)
 
-    while not tcod.console_is_window_closed():
-        tcod.sys_check_for_event(tcod.EVENT_KEY_PRESS, key, mouse)
+                if fov_recompute:
+                    recompute_fov(self.fov_map, self.player.x, self.player.y, self.fov_radius, self.fov_light_walls, self.fov_algorithm)
 
-        if fov_recompute:
-            recompute_fov(fov_map, player.x, player.y, fov_radius, fov_light_walls, fov_algorithm)
+                render_all(self.root, self.entities, self.game_map, self.fov_map, fov_recompute, self.screen_width, self.screen_height, colors)
 
-        render_all(root, entities, game_map, fov_map, fov_recompute, screen_width, screen_height, colors)
+                tcod.console_flush()
 
-        tcod.console_flush()
+                clear_all(self.root, self.entities)
 
-        clear_all(root, entities)
+                move = action.get("move")
+                exit_ = action.get("exit")
+                fullscreen = action.get("fullscreen")
 
-        action = handle_keys(key)
+                if move and game_state == GameStates.PLAYERS_TURN:
+                    dx, dy = move
 
-        move = action.get("move")
-        exit_ = action.get("exit")
-        fullscreen = action.get("fullscreen")
+                    dest_x = self.player.x + dx
+                    dest_y = self.player.y + dy
 
-        if move and game_state == GameStates.PLAYERS_TURN:
-            dx, dy = move
+                    if not self.game_map.is_blocked(dest_x, dest_y):
+                        target = get_blocking_entity_in(self.entities, dest_x, dest_y)
 
-            dest_x = player.x + dx
-            dest_y = player.y + dy
+                        if target is not None:
+                            print(f'You kicked the {target.name}!')
+                            self.player.fighter.attack(target)
+                        else:
+                            self.player.move(dx, dy)
+                            fov_recompute = True
 
-            if not game_map.is_blocked(dest_x, dest_y):
-                target = get_blocking_entity_in(entities, dest_x, dest_y)
+                        game_state = GameStates.ENEMY_TURN
 
-                if target is not None:
-                    print(f'You kicked the {target.name}!')
-                else:
-                    player.move(dx, dy)
-                    fov_recompute = True
+                if exit_:
+                    return
+                    # self.exit_()
 
-                game_state = GameStates.ENEMY_TURN
+                if fullscreen:
+                    tcod.console_set_fullscreen(not tcod.console_is_fullscreen())
 
-        if exit_:
-            return True
+                if game_state == GameStates.ENEMY_TURN:
+                    for entity in self.entities:
+                        if entity.ai:
+                            entity.ai.take_turn(self.player, self.fov_map, self.game_map, self.entities)
 
-        if fullscreen:
-            tcod.console_set_fullscreen(not tcod.console_is_fullscreen())
+                    game_state = GameStates.PLAYERS_TURN
 
-        if game_state == GameStates.ENEMY_TURN:
-            for entity in entities:
-                if entity.ai:
-                    entity.ai.take_turn(player, fov_map, game_map, entities)
+        self.exit_()
 
-            game_state = GameStates.PLAYERS_TURN
+    def exit_(self):
+        # TODO Save?
+        pass
 
 if __name__ == "__main__":
-    main()
+    game = Game()
