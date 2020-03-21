@@ -55,6 +55,15 @@ class Game:
 
         self.main_loop()
 
+    def clean_dead(self):
+        for entity in filter(lambda ent: ent.fighter is not None, self.entities):
+            if entity.fighter.hp <= 0:
+                if entity.name != 'V':
+                    self.entities.remove(entity)
+                else:
+                    # TODO handle player death
+                    pass
+
     def main_loop(self):
         fov_recompute = True
         game_state = GameStates.PLAYERS_TURN
@@ -87,7 +96,9 @@ class Game:
 
                         if target is not None:
                             print(f'You kicked the {target.name}!')
-                            self.player.fighter.attack(target)
+                            death = self.player.fighter.attack(target)
+                            if death:
+                                self.clean_dead()
                         else:
                             self.player.move(dx, dy)
                             fov_recompute = True

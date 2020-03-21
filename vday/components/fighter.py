@@ -7,21 +7,27 @@ class Fighter:
         self.defense = defense
         self.power = power
 
-    def take_dmg(self, from_, amount):
+        # This gets set where you initialise it
+        self.owner: Entity
+
+    def take_dmg(self, from_, amount: int):
         print(f"{self.owner.name} got {amount} damage from {from_.owner.name}")
 
         self.hp -= amount
 
-        if self.hp <= 0 and self.owner.name != 'V':
-            print(f"The {self.owner.name} died")
-        elif self.hp <= 0:
-            # TODO: handle player death
-            pass
+        if self.hp <= 0:
+            if self.owner.name != 'V':
+                print(f"The {self.owner.name} died")
+            else:
+                print(f"You died by the {from_.owner.name}")
+
+            return True
+
+        return False
 
     def attack(self, target: Entity):
         damage = self.power - target.fighter.defense
 
-        if damage < 0:
-            damage = 1
+        damage = damage if damage > 0 else 1
 
-        target.fighter.take_dmg(self, damage)
+        return target.fighter.take_dmg(self, damage)
