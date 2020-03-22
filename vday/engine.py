@@ -97,6 +97,7 @@ class Game:
 
                 move = action.get("move")
                 exit_ = action.get("exit")
+                pause = action.get("pause")
                 fullscreen = action.get("fullscreen")
 
                 if move and game_state == GameStates.PLAYERS_TURN:
@@ -119,6 +120,13 @@ class Game:
 
                         game_state = GameStates.ENEMY_TURN
 
+                if pause:
+                    selected = self.options()
+                    if selected == "continue":
+                        pass
+                    elif selected == "exit":
+                        self.exit_()
+
                 if exit_:
                     self.exit_()
 
@@ -134,7 +142,7 @@ class Game:
 
         self.exit_()
 
-    def menu(self):
+    def menu(self, start_screen=True):
         entries = [
             "play",
             "options",
@@ -157,7 +165,7 @@ class Game:
                     return entries[cur_index]
 
                 if event.sym == tcod.event.K_DOWN:
-                    if len(entries) -1 == cur_index:
+                    if len(entries) - 1 == cur_index:
                         continue
                     cur_index += 1
                     break
@@ -178,8 +186,8 @@ class Game:
                 bg = tcod.black
 
             self.root.print(
-                20,
-                20 + i,
+                self.root.width // 2,
+                self.root.height // 2 - len(entries) + i,
                 entry.title(),
                 fg,
                 bg,
