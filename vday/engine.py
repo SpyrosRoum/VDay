@@ -147,6 +147,8 @@ class Game:
             self.print_entries(entries, cur_index)
 
             for event in tcod.event.get():
+                if event.type == "QUIT":
+                    self.exit_()
                 if event.type != "KEYDOWN":
                     continue
                 if event.repeat:
@@ -158,13 +160,11 @@ class Game:
                     if len(entries) -1 == cur_index:
                         continue
                     cur_index += 1
-                    change = True
                     break
                 elif event.sym == tcod.event.K_UP:
                     if cur_index == 0:
                         continue
                     cur_index -= 1
-                    change = True
                     break
             # TODO highlight curent
 
@@ -178,8 +178,8 @@ class Game:
                 bg = tcod.black
 
             self.root.print(
-                10,
-                10 + i,
+                20,
+                20 + i,
                 entry.title(),
                 fg,
                 bg,
