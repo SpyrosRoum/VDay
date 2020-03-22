@@ -47,15 +47,27 @@ class Game:
             vsync=True,
             order='F'
         )
+        tcod.console_flush()
 
-        self.game_map = GameMap(map_width, map_height)
-        self.game_map.make_map(max_rooms, room_min_size, room_max_size, self.player, self.entities, max_monsters_in_room)
 
-        self.fov_map = init_fov(self.game_map)
+        selected = self.menu()
+        # selected = "play"
 
-        self.main_loop()
+        if selected == "play":
+            self.game_map = GameMap(map_width, map_height)
+            self.game_map.make_map(max_rooms, room_min_size, room_max_size, self.player, self.entities, max_monsters_in_room)
+
+            self.fov_map = init_fov(self.game_map)
+
+            self.main_loop()
+        elif selected == "exit":
+            self.exit_()
+        else:
+            self.options()
 
     def clean_dead(self):
+        # We only care about entities with fighter comp
+        # since the others can't die
         for entity in filter(lambda ent: ent.fighter is not None, self.entities):
             if entity.fighter.hp <= 0:
                 if entity.name != 'V':
@@ -65,6 +77,8 @@ class Game:
                     pass
 
     def main_loop(self):
+        self.root.clear()
+
         fov_recompute = True
         game_state = GameStates.PLAYERS_TURN
 
@@ -106,8 +120,7 @@ class Game:
                         game_state = GameStates.ENEMY_TURN
 
                 if exit_:
-                    return
-                    # self.exit_()
+                    self.exit_()
 
                 if fullscreen:
                     tcod.console_set_fullscreen(not tcod.console_is_fullscreen())
@@ -121,9 +134,68 @@ class Game:
 
         self.exit_()
 
+    def menu(self):
+        entries = [
+            "play",
+            "options",
+            "exit"
+        ]
+        cur_index = 0
+
+
+        while True:
+            self.print_entries(entries, cur_index)
+
+            for event in tcod.event.get():
+                if event.type != "KEYDOWN":
+                    continue
+                if event.repeat:
+                    continue
+                if event.sym == tcod.event.K_RETURN:
+                    return entries[cur_index]
+
+                if event.sym == tcod.event.K_DOWN:
+                    if len(entries) -1 == cur_index:
+                        continue
+                    cur_index += 1
+                    change = True
+                    break
+                elif event.sym == tcod.event.K_UP:
+                    if cur_index == 0:
+                        continue
+                    cur_index -= 1
+                    change = True
+                    break
+            # TODO highlight curent
+
+    def print_entries(self, entries, cur_index):
+        for i, entry in enumerate(entries):
+            if i == cur_index:
+                fg = tcod.white
+                bg = tcod.light_blue
+            else:
+                fg = tcod.grey
+                bg = tcod.black
+
+            self.root.print(
+                10,
+                10 + i,
+                entry.title(),
+                fg,
+                bg,
+                alignment=tcod.LEFT
+            )
+
+        tcod.console_flush()
+
+
+    def options(self):
+        # TODO the options
+        print("We are in options now!")
+
     def exit_(self):
         # TODO Save?
-        pass
+        raise SystemExit
 
 if __name__ == "__main__":
     game = Game()
