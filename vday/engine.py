@@ -8,6 +8,7 @@ from fov_functions import init_fov, recompute_fov
 from game_states import GameStates
 from map_objects.game_map import GameMap
 from render_functions import render_all, clear_all
+from game_snapshot import GameSnapshot
 
 colors = {
     'dark_wall': tcod.Color(0, 0, 100),
@@ -20,18 +21,13 @@ class Game:
     def __init__(self):
         self.screen_width = 80
         self.screen_height = 50
-        map_width = 80
-        map_height = 45
 
-        room_max_size = 10
-        room_min_size = 6
-        max_rooms = 30
+        self.day = 1
 
         self.fov_algorithm = 0
         self.fov_light_walls = True
         self.fov_radius = 10
 
-        max_monsters_in_room = 3
 
         fighter_component = Fighter(hp=30, defense=2, power=5)
         self.player = Entity(0, 0, "@", tcod.white, 'V', blocks=True, fighter=fighter_component)
@@ -49,21 +45,51 @@ class Game:
         )
         tcod.console_flush()
 
+        while True:
+            in_options = self.print_menu()
 
+            while in_options:
+                selected = self.options()
+
+                volume = selected.get('volume')
+                save = selected.get('save')
+                load = selected.get('load')
+                in_options = selected.get('back', True)
+
+                if save:
+                    self.save()
+                    in_options = True
+
+
+    def start_game(self):
+        # TODO load latest save?
+        max_monsters_in_room = 3
+        map_width = 80
+        map_height = 45
+
+        room_max_size = 10
+        room_min_size = 6
+        max_rooms = 30
+
+        self.game_map = GameMap(map_width, map_height)
+        self.game_map.make_map(max_rooms, room_min_size, room_max_size,
+                               self.player, self.entities, max_monsters_in_room)
+
+        self.fov_map = init_fov(self.game_map)
+
+        self.main_loop()
+
+    def print_menu(self):
+        self.root.clear(fg = (63, 127, 63))
         selected = self.menu()
-        # selected = "play"
 
         if selected == "play":
-            self.game_map = GameMap(map_width, map_height)
-            self.game_map.make_map(max_rooms, room_min_size, room_max_size, self.player, self.entities, max_monsters_in_room)
-
-            self.fov_map = init_fov(self.game_map)
-
-            self.main_loop()
+            self.start_game()
         elif selected == "exit":
             self.exit_()
-        else:
-            self.options()
+        elif selected == "options":
+            # Meaning they want to go to options
+            return True
 
     def clean_dead(self):
         # We only care about entities with fighter comp
@@ -77,7 +103,7 @@ class Game:
                     pass
 
     def main_loop(self):
-        self.root.clear()
+        self.root.clear(fg = (63, 127, 63))
 
         fov_recompute = True
         game_state = GameStates.PLAYERS_TURN
@@ -122,9 +148,16 @@ class Game:
 
                 if pause:
                     selected = self.options()
-                    if selected == "continue":
+                    self.root.clear(fg = (63, 127, 63))
+                    continue_ = selected.get("back")
+                    save = selected.get("save")
+                    exit_ = selected.get("exit")
+
+                    if continue_:
                         pass
-                    elif selected == "exit":
+                    elif save:
+                        self.save()
+                    elif exit_:
                         self.exit_()
 
                 if exit_:
@@ -142,14 +175,13 @@ class Game:
 
         self.exit_()
 
-    def menu(self, start_screen=True):
+    def menu(self):
         entries = [
             "play",
             "options",
             "exit"
         ]
         cur_index = 0
-
 
         while True:
             self.print_entries(entries, cur_index)
@@ -174,7 +206,43 @@ class Game:
                         continue
                     cur_index -= 1
                     break
-            # TODO highlight curent
+
+    def options(self):
+        self.root.clear(fg = (63, 127, 63))
+        entries = [
+            "volume",
+            "save",
+            "back"
+        ]
+        cur_index = 0
+
+        while True:
+            self.print_entries(entries, cur_index)
+
+            for event in tcod.event.get():
+                if event.type == "QUIT":
+                    self.exit_()
+                if event.type != "KEYDOWN":
+                    continue
+                if event.repeat:
+                    continue
+                if event.sym == tcod.event.K_RETURN:
+                    if entries[cur_index] == "back":
+                        # Meaning they don't want to be in options any more
+                        return {entries[cur_index]: False}
+                    else:
+                        return {entries[cur_index]: True}
+
+                if event.sym == tcod.event.K_DOWN:
+                    if len(entries) - 1 == cur_index:
+                        continue
+                    cur_index += 1
+                    break
+                elif event.sym == tcod.event.K_UP:
+                    if cur_index == 0:
+                        continue
+                    cur_index -= 1
+                    break
 
     def print_entries(self, entries, cur_index):
         for i, entry in enumerate(entries):
@@ -196,14 +264,18 @@ class Game:
 
         tcod.console_flush()
 
-
-    def options(self):
-        # TODO the options
-        print("We are in options now!")
-
     def exit_(self):
-        # TODO Save?
         raise SystemExit
+
+    def save(self):
+        snapshot = GameSnapshot(
+            player_max_health=self.player.fighter.max_hp,
+            current_day=self.day,
+            volume=1
+        )
+        snapshot.save()
+
 
 if __name__ == "__main__":
     game = Game()
+

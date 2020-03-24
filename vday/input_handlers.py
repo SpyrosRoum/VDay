@@ -19,7 +19,7 @@ def handle_keys(event):
 
     #* Exit
     if sym == tcod.event.K_ESCAPE:
-        return {'exit': True}
+        return {'pause': True}
 
     #* No key was pressed
     return {}
