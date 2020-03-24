@@ -4,7 +4,7 @@ class Entity:
     """
     A generic object to represent players, enemies, items, etc
     """
-    def __init__(self, x, y, char, color, name, blocks=False, fighter=None, ai=None):
+    def __init__(self, x, y, char, color, name, blocks=False, **kwargs): # friend=False, friend_strength=None):
         self.x = x
         self.y = y
         self.char = char
@@ -12,8 +12,8 @@ class Entity:
         self.name = name
         self.blocks = blocks
 
-        self.fighter = fighter
-        self.ai = ai
+        self.fighter = kwargs.get('fighter')
+        self.ai = kwargs.get('ai')
 
         if self.fighter:
             self.fighter.owner = self
