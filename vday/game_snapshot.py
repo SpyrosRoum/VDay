@@ -5,6 +5,7 @@ It holds info about the current game state and options
 from dataclasses import dataclass
 from datetime import datetime
 import pickle
+from pathlib import Path
 
 @dataclass
 class GameSnapshot:
@@ -27,6 +28,8 @@ class GameSnapshot:
         """
         Save this object in a file to be  loaded later
         """
+        Path("./saves").mkdir(exist_ok=True)
+
         now = datetime.now()
         fp = f"saves/save_{now.day}_{now.month}_{now.hour}_{now.minute}_{now.second}"
         with open(fp, "wb") as file:
