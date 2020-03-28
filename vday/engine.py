@@ -1,3 +1,6 @@
+import os
+import time
+
 import tcod
 import tcod.event
 
@@ -9,6 +12,8 @@ from game_states import GameStates
 from map_objects.game_map import GameMap
 from render_functions import render_all, clear_all
 from game_snapshot import GameSnapshot
+from menus import Menu
+
 
 colors = {
     'dark_wall': tcod.Color(0, 0, 100),
@@ -43,26 +48,57 @@ class Game:
             vsync=True,
             order='F'
         )
-        tcod.console_flush()
 
-        while True:
-            in_options = self.print_menu()
+        selected = self.menu()
 
-            while in_options:
-                selected = self.options()
+        while selected != "play":
+            selected = self.menu()
 
-                volume = selected.get('volume')
-                save = selected.get('save')
-                load = selected.get('load')
-                in_options = selected.get('back', True)
+        self.start_game()
 
-                if save:
-                    self.save()
-                    in_options = True
+    def menu(self):
+        menu = Menu(["play", "options", "exit"], self.root)
+        self.dest_x = int(self.root.width - self.root.width//1.35)
+        self.dest_y = int(self.root.height - self.root.height//1.35)
+        menu.console.blit(self.root, self.dest_x, self.dest_y)
 
+        while menu.selected_entry is None:
+            for event in tcod.event.get():
+                menu.dispatch(event)
+                menu.console.blit(self.root, self.dest_x, self.dest_y)
+                tcod.console_flush()
+
+        play = menu.selected_entry.get('play')
+        options = menu.selected_entry.get('options')
+        exit_ = menu.selected_entry.get('exit')
+        end = menu.selected_entry.get('end')
+
+        if play:
+            return "play"
+        elif exit_ or end:
+            self.exit_()
+        elif options:
+            options = Menu(["volume", "back"], self.root, "Options")
+            self.root.clear()
+            options.console.blit(self.root, self.dest_x, self.dest_y)
+
+            while options.selected_entry is None:
+                for event in tcod.event.get():
+                    options.dispatch(event)
+                    options.console.blit(self.root, self.dest_x, self.dest_y)
+                    tcod.console_flush()
+
+            back = options.selected_entry.get("back")
+            volume = options.selected_entry.get("volume")
+
+            if back:
+                return "in menu"
+            elif volume:
+                # TODO handle volume setting
+                pass
 
     def start_game(self):
-        # TODO load latest save?
+        # TODO option to select save
         max_monsters_in_room = 3
         map_width = 80
         map_height = 45
@@ -78,18 +114,6 @@ class Game:
         self.fov_map = init_fov(self.game_map)
 
         self.main_loop()
-
-    def print_menu(self):
-        self.root.clear(fg = (63, 127, 63))
-        selected = self.menu()
-
-        if selected == "play":
-            self.start_game()
-        elif selected == "exit":
-            self.exit_()
-        elif selected == "options":
-            # Meaning they want to go to options
-            return True
 
     def clean_dead(self):
         # We only care about entities with fighter comp
@@ -147,16 +171,25 @@ class Game:
                         game_state = GameStates.ENEMY_TURN
 
                 if pause:
-                    selected = self.options()
-                    self.root.clear(fg = (63, 127, 63))
-                    continue_ = selected.get("back")
-                    save = selected.get("save")
-                    exit_ = selected.get("exit")
+                    pause_menu = Menu(["continue", "save", "volume", "exit"], self.root, "Pause")
+
+                    while pause_menu.selected_entry is None:
+                        for event in tcod.event.get():
+                            pause_menu.dispatch(event)
+                            pause_menu.console.blit(self.root, self.dest_x, self.dest_y, bg_alpha=0.75)
+                            tcod.console_flush()
+
+                    continue_ = pause_menu.selected_entry.get("continue")
+                    save = pause_menu.selected_entry.get("save")
+                    volume = pause_menu.selected_entry.get("volume")
+                    exit_ = pause_menu.selected_entry.get("exit") or pause_menu.selected_entry.get("end")
+
 
                     if continue_:
-                        pass
+                        self.root.clear(fg=(63,127,63))
                     elif save:
                         self.save()
+                        self.root.clear(fg=(63, 127, 63))
                     elif exit_:
                         self.exit_()
 
@@ -175,95 +208,6 @@ class Game:
 
         self.exit_()
 
-    def menu(self):
-        entries = [
-            "play",
-            "options",
-            "exit"
-        ]
-        cur_index = 0
-
-        while True:
-            self.print_entries(entries, cur_index)
-
-            for event in tcod.event.get():
-                if event.type == "QUIT":
-                    self.exit_()
-                if event.type != "KEYDOWN":
-                    continue
-                if event.repeat:
-                    continue
-                if event.sym == tcod.event.K_RETURN:
-                    return entries[cur_index]
-
-                if event.sym == tcod.event.K_DOWN:
-                    if len(entries) - 1 == cur_index:
-                        continue
-                    cur_index += 1
-                    break
-                elif event.sym == tcod.event.K_UP:
-                    if cur_index == 0:
-                        continue
-                    cur_index -= 1
-                    break
-
-    def options(self):
-        self.root.clear(fg = (63, 127, 63))
-        entries = [
-            "volume",
-            "save",
-            "back"
-        ]
-        cur_index = 0
-
-        while True:
-            self.print_entries(entries, cur_index)
-
-            for event in tcod.event.get():
-                if event.type == "QUIT":
-                    self.exit_()
-                if event.type != "KEYDOWN":
-                    continue
-                if event.repeat:
-                    continue
-                if event.sym == tcod.event.K_RETURN:
-                    if entries[cur_index] == "back":
-                        # Meaning they don't want to be in options any more
-                        return {entries[cur_index]: False}
-                    else:
-                        return {entries[cur_index]: True}
-
-                if event.sym == tcod.event.K_DOWN:
-                    if len(entries) - 1 == cur_index:
-                        continue
-                    cur_index += 1
-                    break
-                elif event.sym == tcod.event.K_UP:
-                    if cur_index == 0:
-                        continue
-                    cur_index -= 1
-                    break
-
-    def print_entries(self, entries, cur_index):
-        for i, entry in enumerate(entries):
-            if i == cur_index:
-                fg = tcod.white
-                bg = tcod.light_blue
-            else:
-                fg = tcod.grey
-                bg = tcod.black
-
-            self.root.print(
-                self.root.width // 2,
-                self.root.height // 2 - len(entries) + i,
-                entry.title(),
-                fg,
-                bg,
-                alignment=tcod.LEFT
-            )
-
-        tcod.console_flush()
-
     def exit_(self):
         raise SystemExit
 
@@ -274,7 +218,6 @@ class Game:
             volume=1
         )
         snapshot.save()
-
 
 if __name__ == "__main__":
     game = Game()
