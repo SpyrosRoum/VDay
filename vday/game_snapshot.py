@@ -36,3 +36,13 @@ class GameSnapshot:
             pickle.dump(self, file)
 
         print("Saved!")
+
+    @staticmethod
+    def load(fp):
+        with open(fp, "rb") as file:
+            game_snap = pickle.load(file)
+
+        return game_snap
+
+
+
