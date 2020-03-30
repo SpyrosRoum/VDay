@@ -103,7 +103,26 @@ class Game:
                 pass
 
     def start_game(self):
-        # TODO option to select save
+        # TODO paginate saves
+        # for save in os.listdir("saves/"):
+        #     if not save.startswith("save_"):
+        #         continue
+        #     print(save)
+        saves = []
+        with os.scandir("saves/") as it:
+            for entry in it:
+                if not entry.name.startswith("save_") and not entry.is_file():
+                    continue
+                saves.append(entry.path)
+
+        saves = sorted(saves, key=lambda save: ((lst := save.split("_"))[2], lst[1], lst[3], lst[4], lst[5]))
+        load_screen = Menu(saves, self.root, "Load")
+
+        self.give_control_to_menu(load_screen)
+
+        save_path = list(load_screen.selected_entry)[0]
+        self.load(save_path)
+
         max_monsters_in_room = 3
         map_width = 80
         map_height = 45
@@ -219,6 +238,14 @@ class Game:
             volume=1
         )
         snapshot.save()
+
+    def load(self, path):
+        game_snap = GameSnapshot.load(path)
+
+        self.day = game_snap.current_day
+        self.volume = game_snap.volume
+        self.player.fighter.max_hp = game_snap.player_max_health
+
 
 if __name__ == "__main__":
     game = Game()
