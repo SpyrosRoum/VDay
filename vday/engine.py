@@ -49,6 +49,10 @@ class Game:
             order='F'
         )
 
+        # For bliting menus
+        self.dest_x = int(self.root.width - self.root.width//1.35)
+        self.dest_y = int(self.root.height - self.root.height//1.35)
+
         selected = self.menu()
 
         while selected != "play":
@@ -56,10 +60,10 @@ class Game:
 
         self.start_game()
 
-    def menu(self):
-        menu = Menu(["play", "options", "exit"], self.root)
-        self.dest_x = int(self.root.width - self.root.width//1.35)
-        self.dest_y = int(self.root.height - self.root.height//1.35)
+    def give_control_to_menu(self, menu: Menu) -> None:
+        """
+        Keep control until there is a choice made
+        """
         menu.console.blit(self.root, self.dest_x, self.dest_y)
 
         while menu.selected_entry is None:
@@ -67,6 +71,12 @@ class Game:
                 menu.dispatch(event)
                 menu.console.blit(self.root, self.dest_x, self.dest_y)
                 tcod.console_flush()
+
+    def menu(self):
+        menu = Menu(["play", "options", "exit"], self.root)
+
+
+        self.give_control_to_menu(menu)
 
         play = menu.selected_entry.get('play')
         options = menu.selected_entry.get('options')
@@ -80,13 +90,8 @@ class Game:
         elif options:
             options = Menu(["volume", "back"], self.root, "Options")
             self.root.clear()
-            options.console.blit(self.root, self.dest_x, self.dest_y)
 
-            while options.selected_entry is None:
-                for event in tcod.event.get():
-                    options.dispatch(event)
-                    options.console.blit(self.root, self.dest_x, self.dest_y)
-                    tcod.console_flush()
+            self.give_control_to_menu(options)
 
             back = options.selected_entry.get("back")
             volume = options.selected_entry.get("volume")
@@ -173,11 +178,7 @@ class Game:
                 if pause:
                     pause_menu = Menu(["continue", "save", "volume", "exit"], self.root, "Pause")
 
-                    while pause_menu.selected_entry is None:
-                        for event in tcod.event.get():
-                            pause_menu.dispatch(event)
-                            pause_menu.console.blit(self.root, self.dest_x, self.dest_y, bg_alpha=0.75)
-                            tcod.console_flush()
+                    self.give_control_to_menu(pause_menu)
 
                     continue_ = pause_menu.selected_entry.get("continue")
                     save = pause_menu.selected_entry.get("save")
